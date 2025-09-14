@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meerko's Scripts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d1a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1a1a2e;
+            border: 2px solid #3c3c6f;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 100%;
+            padding: 2.5rem;
+        }
+        .script-container {
+            background-color: #0d0d1a;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #5a5a8e;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .copy-button:hover {
+            background-color: #7a7ab3;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.875rem;
+            color: #d1d5db;
+        }
+        .social-link {
+            background-color: #2e2e4f;
+            padding: 1rem;
+            border-radius: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .social-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+        .toast-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .toast-message.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div class="container">
+        <div class="text-center">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-purple-400 mb-2">Welcome to Meerko's Scripts</h1>
+            <p class="text-gray-400 text-lg md:text-xl">Your Best Script Provider</p>
+        </div>
+
+        <div class="script-container">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">SAB SCRIPT:</h2>
+                <button class="copy-button" id="copy-btn">Copy Script</button>
+            </div>
+            <pre id="script-content">
+-- Welcome to the SAB Script!
+-- This script is designed for the Roblox environment.
+-- Please do not run this script in an unsupported environment.
+
+-- Your script content will go here.
+-- Example:
+local player = game.Players.LocalPlayer
+
+print("SAB Script loaded successfully!")
+            </pre>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="YOUR_DISCORD_INVITE_LINK_HERE" target="_blank" class="social-link block w-full text-center">
+                <p class="font-bold text-lg">Join our Discord server for future updates</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-message">Script copied!</div>
+
+    <script>
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const scriptContent = document.getElementById('script-content').innerText;
+            
+            // Fallback for old browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = scriptContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            // Show toast message
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        });
+    </script>
+
+</body>
+</html>
+
