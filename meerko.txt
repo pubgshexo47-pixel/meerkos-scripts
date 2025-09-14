@@ -1,0 +1,202 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+--// VARIABLES
+local ascendBV = nil
+local autoStealActive = false
+local savedPosition = nil
+local floatSpeed = 0.35 -- vertical oscillation
+local moveSpeed = 0.12 -- horizontal movement
+local zigzagOffset = 1.2 -- zigzag side-to-side
+
+--// HELPER: DRAGGABLE UI
+local function makeDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
+    end
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then update(input) end
+    end)
+end
+
+--// FLOAT FUNCTIONS
+local function stopFloat()
+    if ascendBV then ascendBV:Destroy() ascendBV=nil end
+end
+
+local function floatTowards(targetPos)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+
+    -- HORIZONTAL ZIGZAG
+    local diff = targetPos - hrp.Position
+    local horizontal = Vector3.new(diff.X,0,diff.Z)
+    local dist = horizontal.Magnitude
+    if dist > 0.1 then
+        local step = math.min(moveSpeed, dist)
+        local zigzag = Vector3.new(math.sin(tick()*2)*zigzagOffset,0,0)
+        hrp.CFrame = hrp.CFrame + horizontal.Unit * step + zigzag
+    end
+
+    -- VERTICAL FLOAT/UNFLOAT
+    local verticalDiff = diff.Y
+    local targetVel = math.sin(tick()*6)*floatSpeed + (verticalDiff*0.15)
+    if ascendBV then ascendBV:Destroy() end
+    ascendBV = Instance.new("BodyVelocity")
+    ascendBV.MaxForce = Vector3.new(0,9e9,0)
+    ascendBV.Velocity = Vector3.new(0,targetVel,0)
+    ascendBV.Parent = hrp
+    Debris:AddItem(ascendBV,0.1)
+end
+
+--// CREATE MAIN GUI
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "MeerkoTweenV3_UI"
+gui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Size = UDim2.new(0,200,0,190)
+mainFrame.Position = UDim2.new(0.5,-100,0.4,-95)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Instance.new("UICorner", mainFrame).CornerRadius=UDim.new(0,12)
+mainFrame.Active = true
+makeDraggable(mainFrame)
+
+local title = Instance.new("TextLabel", mainFrame)
+title.Size = UDim2.new(1,0,0,25)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Text = "Meerko Tween V3"
+
+local subTitle = Instance.new("TextLabel", mainFrame)
+subTitle.Size = UDim2.new(1,0,0,20)
+subTitle.Position = UDim2.new(0,0,0,25)
+subTitle.BackgroundTransparency = 1
+subTitle.Font = Enum.Font.Gotham
+subTitle.TextSize = 12
+subTitle.TextColor3 = Color3.fromRGB(200,200,200)
+subTitle.Text = "ttk@mkosoul"
+
+-- SAVE POSITION BUTTON
+local saveBtn = Instance.new("TextButton", mainFrame)
+saveBtn.Size = UDim2.new(0.8,0,0,28)
+saveBtn.Position = UDim2.new(0.1,0,0,55)
+saveBtn.Text = "Save Position"
+saveBtn.Font = Enum.Font.Gotham
+saveBtn.TextSize = 14
+saveBtn.BackgroundColor3 = Color3.fromRGB(50,200,50)
+saveBtn.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0,8)
+saveBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        savedPosition = char.HumanoidRootPart.Position
+    end
+end)
+
+-- GO TO SAVED POSITION BUTTON
+local goBtn = Instance.new("TextButton", mainFrame)
+goBtn.Size = UDim2.new(0.8,0,0,28)
+goBtn.Position = UDim2.new(0.1,0,0,90)
+goBtn.Text = "Go to Saved Position"
+goBtn.Font = Enum.Font.Gotham
+goBtn.TextSize = 14
+goBtn.BackgroundColor3 = Color3.fromRGB(50,150,250)
+goBtn.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", goBtn).CornerRadius = UDim.new(0,8)
+goBtn.MouseButton1Click:Connect(function()
+    if savedPosition then
+        autoStealActive = false
+        spawn(function()
+            while (LocalPlayer.Character.HumanoidRootPart.Position - savedPosition).Magnitude > 0.5 do
+                floatTowards(savedPosition)
+                task.wait(0.03)
+            end
+            stopFloat()
+        end)
+    end
+end)
+
+-- AUTO STEAL TOGGLE BUTTON
+local autoBtn = Instance.new("TextButton", mainFrame)
+autoBtn.Size = UDim2.new(0.8,0,0,28)
+autoBtn.Position = UDim2.new(0.1,0,0,125)
+autoBtn.Text = "Auto Steal"
+autoBtn.Font = Enum.Font.Gotham
+autoBtn.TextSize = 14
+autoBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0,8)
+autoBtn.MouseButton1Click:Connect(function()
+    if not savedPosition then return end
+    autoStealActive = not autoStealActive
+    if not autoStealActive then stopFloat() end
+    autoBtn.Text = autoStealActive and "Auto Steal ✅" or "Auto Steal"
+end)
+
+-- STOP BUTTON
+local stopBtn = Instance.new("TextButton", mainFrame)
+stopBtn.Size = UDim2.new(0.8,0,0,28)
+stopBtn.Position = UDim2.new(0.1,0,0,160)
+stopBtn.Text = "Stop"
+stopBtn.Font = Enum.Font.Gotham
+stopBtn.TextSize = 14
+stopBtn.BackgroundColor3 = Color3.fromRGB(180,180,50)
+stopBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0,8)
+stopBtn.MouseButton1Click:Connect(function()
+    autoStealActive = false
+    stopFloat()
+end)
+
+-- FLOATING CIRCLE TOGGLE
+local circle = Instance.new("TextButton", gui)
+circle.Size = UDim2.new(0,50,0,50)
+circle.Position = UDim2.new(0.9,0,0.4,0)
+circle.Text = "☰"
+circle.Font = Enum.Font.GothamBold
+circle.TextSize = 22
+circle.TextColor3 = Color3.fromRGB(255,255,255)
+circle.BackgroundColor3 = Color3.fromRGB(50,50,50)
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1,0)
+circle.Active = true
+makeDraggable(circle)
+circle.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
+
+-- AUTO-STEAL HEARTBEAT LOOP
+RunService.Heartbeat:Connect(function()
+    if autoStealActive and savedPosition then
+        floatTowards(savedPosition)
+    end
+end)
+
+-- CLEANUP ON RESPAWN
+LocalPlayer.CharacterAdded:Connect(function(char)
+    ascendBV = nil
+end)
